@@ -46,11 +46,11 @@ class InspectorBasicTest(manager.InspectorScenarioTest):
         self.assertEqual(expected_cpu_arch,
                          node['properties']['cpu_arch'])
 
-    def verify_node_introspection_abort_data(self, uuid):
+    def verify_introspection_aborted(self, uuid):
         status = self.introspection_status(uuid)
 
         self.assertEqual('Canceled by operator', status['error'])
-        self.assertEqual('True', status['finished'])
+        self.assertEqual(True, status['finished'])
 
     def verify_node_power_state(self, uuid):
         node = self.node_show(uuid)
@@ -124,7 +124,7 @@ class InspectorBasicTest(manager.InspectorScenarioTest):
         """
         # start nodes introspection
         for node_id in self.node_ids:
-            self.introspect_node(node_id)
+            self.introspection_start(node_id)
 
         # wait for nodes power on
         for node_id in self.node_ids:
@@ -136,8 +136,9 @@ class InspectorBasicTest(manager.InspectorScenarioTest):
 
         # verify nodes status and power state
         for node_id in self.node_ids:
-            self.verify_node_introspection_abort_data(node_id)
+            self.verify_introspection_aborted(node_id)
             self.verify_node_power_state(node_id)
+            self.addCleanup(self.failed_node_cleanup, node_id)
 
 
 class InspectorSmokeTest(manager.InspectorScenarioTest):
