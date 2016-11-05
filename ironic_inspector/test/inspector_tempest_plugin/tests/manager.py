@@ -115,6 +115,9 @@ class InspectorScenarioTest(BaremetalScenarioTest):
     def introspection_status(self, uuid):
         return self.introspection_client.get_status(uuid)[1]
 
+    def introspection_details(self, uuid):
+        return self.introspection_client
+
     def introspection_data(self, uuid):
         return self.introspection_client.get_data(uuid)[1]
 
@@ -236,3 +239,20 @@ class InspectorScenarioTest(BaremetalScenarioTest):
         self.baremetal_client.set_node_provision_state(node_id, 'manage')
         self.baremetal_client.set_node_provision_state(node_id, 'inspect')
         self.addCleanup(self.node_cleanup, node_id)
+
+    def failed_node_cleanup(self, node_id):
+        if (self.node_show(node_id)['provision_state'] ==
+           BaremetalProvisionStates.AVAILABLE):
+            return
+        try:
+            self.baremetal_client.set_node_provision_state(node_id, 'manage')
+            self.baremetal_client.set_node_provision_state(node_id, 'provide')
+        except tempest.lib.exceptions.RestClientException:
+            # maybe node already cleaning or available
+            pass
+
+        self.wait_provisioning_state(
+            node_id, [BaremetalProvisionStates.AVAILABLE,
+                      BaremetalProvisionStates.NOSTATE],
+            timeout=CONF.baremetal.unprovision_timeout,
+            interval=self.wait_provisioning_state_interval)
