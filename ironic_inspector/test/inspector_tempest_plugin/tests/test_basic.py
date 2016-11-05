@@ -124,6 +124,7 @@ class InspectorBasicTest(manager.InspectorScenarioTest):
         """
         # start nodes introspection
         for node_id in self.node_ids:
+            self.baremetal_client.set_node_provision_state(node_id, 'manage')
             self.introspection_start(node_id)
 
         # wait for nodes power on
