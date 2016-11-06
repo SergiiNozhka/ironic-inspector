@@ -47,7 +47,7 @@ class InspectorBasicTest(manager.InspectorScenarioTest):
                          node['properties']['cpu_arch'])
 
     def verify_introspection_aborted(self, uuid):
-        status = self.introspection_data(uuid)
+        status = self.introspection_status(uuid)
         print "\n\n\n >>>>>>>>>>>> {} \n\n".format(status)
 
         self.assertEqual('Canceled by operator', status['error'])
