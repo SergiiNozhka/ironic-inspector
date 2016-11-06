@@ -135,6 +135,10 @@ class InspectorBasicTest(manager.InspectorScenarioTest):
         # abort introspection
         for node_id in self.node_ids:
             self.introspection_abort(node_id)
+        
+        # wait for nodes power off
+        for node_id in self.node_ids:
+            self.wait_power_state(node_id, BaremetalPowerStates.POWER_OFF)
 
         # verify nodes status and power state
         for node_id in self.node_ids:
