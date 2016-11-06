@@ -144,7 +144,7 @@ class InspectorBasicTest(manager.InspectorScenarioTest):
         for node_id in self.node_ids:
             self.verify_introspection_aborted(node_id)
             self.verify_node_power_state(node_id)
-            self.addCleanup(self.failed_node_cleanup, node_id)
+            self.addCleanup(self.node_cleanup, node_id)
 
 
 class InspectorSmokeTest(manager.InspectorScenarioTest):
