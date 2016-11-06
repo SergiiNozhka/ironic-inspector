@@ -135,22 +135,14 @@ class InspectorBasicTest(manager.InspectorScenarioTest):
         for node_id in self.node_ids:
             self.introspection_abort(node_id)
 
-        # wait for nodes inspection status change
+        # wait for nodes power off
         for node_id in self.node_ids:
-            self.wait_provisioning_state(
-                node_id, 'inspect failed',
-                timeout=CONF.baremetal_introspection.ironic_sync_timeout,
-                interval=self.wait_provisioning_state_interval)
+            self.wait_power_state(node_id, BaremetalPowerStates.POWER_OFF)
 
         # verify nodes status and power state
         for node_id in self.node_ids:
             self.verify_introspection_aborted(node_id)
             self.verify_node_power_state(node_id)
-            
-        # cleanup nodes
-        for node_id in self.node_ids:
-            self.baremetal_client.set_node_provision_state(node_id, 'manage')
-            self.addCleanup(self.node_cleanup, node_id)
 
 
 class InspectorSmokeTest(manager.InspectorScenarioTest):
