@@ -48,7 +48,6 @@ class InspectorBasicTest(manager.InspectorScenarioTest):
 
     def verify_introspection_aborted(self, uuid):
         status = self.introspection_status(uuid)
-        print "\n\n\n >>>>>>>>>>>> {} \n\n".format(status)
 
         self.assertEqual('Canceled by operator', status['error'])
         self.assertEqual(True, status['finished'])
@@ -135,15 +134,22 @@ class InspectorBasicTest(manager.InspectorScenarioTest):
         # abort introspection
         for node_id in self.node_ids:
             self.introspection_abort(node_id)
-        
-        # wait for nodes power off
+
+        # wait for nodes inspection status change
         for node_id in self.node_ids:
-            self.wait_power_state(node_id, BaremetalPowerStates.POWER_OFF)
+            self.wait_provisioning_state(
+                node_id, 'inspect failed',
+                timeout=CONF.baremetal_introspection.ironic_sync_timeout,
+                interval=self.wait_provisioning_state_interval)
 
         # verify nodes status and power state
         for node_id in self.node_ids:
             self.verify_introspection_aborted(node_id)
             self.verify_node_power_state(node_id)
+            
+        # cleanup nodes
+        for node_id in self.node_ids:
+            self.baremetal_client.set_node_provision_state(node_id, 'manage')
             self.addCleanup(self.node_cleanup, node_id)
 
 
