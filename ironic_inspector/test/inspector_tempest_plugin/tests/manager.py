@@ -115,9 +115,6 @@ class InspectorScenarioTest(BaremetalScenarioTest):
     def introspection_status(self, uuid):
         return self.introspection_client.get_status(uuid)[1]
 
-    def introspection_details(self, uuid):
-        return self.introspection_client
-
     def introspection_data(self, uuid):
         return self.introspection_client.get_data(uuid)[1]
 
@@ -216,6 +213,11 @@ class InspectorScenarioTest(BaremetalScenarioTest):
         if (self.node_show(node_id)['provision_state'] ==
            BaremetalProvisionStates.AVAILABLE):
             return
+        # in case when introspection failed we need set provision state
+        # to 'manage' to make it possible transit into 'provide' state
+        if self.node_show(node_id)['provision_state'] == 'inspect failed':
+            self.baremetal_client.set_node_provision_state(node_id, 'manage')
+
         try:
             self.baremetal_client.set_node_provision_state(node_id, 'provide')
         except tempest.lib.exceptions.RestClientException:
@@ -228,31 +230,15 @@ class InspectorScenarioTest(BaremetalScenarioTest):
             timeout=CONF.baremetal.unprovision_timeout,
             interval=self.wait_provisioning_state_interval)
 
-    def introspect_node(self, node_id):
-        # in case there are properties remove those
-        patch = {('properties/%s' % key): None for key in
-                 self.node_show(node_id)['properties']}
-        # reset any previous rule result
-        patch['extra/rule_success'] = None
-        self.node_update(node_id, patch)
+    def introspect_node(self, node_id, remove_props=True):
+        if remove_props:
+            # in case there are properties remove those
+            patch = {('properties/%s' % key): None for key in
+                     self.node_show(node_id)['properties']}
+            # reset any previous rule result
+            patch['extra/rule_success'] = None
+            self.node_update(node_id, patch)
 
         self.baremetal_client.set_node_provision_state(node_id, 'manage')
         self.baremetal_client.set_node_provision_state(node_id, 'inspect')
         self.addCleanup(self.node_cleanup, node_id)
-
-    def failed_node_cleanup(self, node_id):
-        if (self.node_show(node_id)['provision_state'] ==
-           BaremetalProvisionStates.AVAILABLE):
-            return
-        try:
-            self.baremetal_client.set_node_provision_state(node_id, 'manage')
-            self.baremetal_client.set_node_provision_state(node_id, 'provide')
-        except tempest.lib.exceptions.RestClientException:
-            # maybe node already cleaning or available
-            pass
-
-        self.wait_provisioning_state(
-            node_id, [BaremetalProvisionStates.AVAILABLE,
-                      BaremetalProvisionStates.NOSTATE],
-            timeout=CONF.baremetal.unprovision_timeout,
-            interval=self.wait_provisioning_state_interval)
